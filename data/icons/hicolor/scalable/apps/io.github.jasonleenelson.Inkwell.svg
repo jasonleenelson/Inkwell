@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="cover" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3584e4"/>
+      <stop offset="1" stop-color="#1c71d8"/>
+    </linearGradient>
+  </defs>
+  <rect x="20" y="14" width="88" height="104" rx="10" fill="#1a5fb4"/>
+  <rect x="20" y="10" width="88" height="102" rx="10" fill="url(#cover)"/>
+  <rect x="34" y="10" width="74" height="102" rx="0" fill="#ffffff" opacity="0.08"/>
+  <rect x="28" y="10" width="6" height="102" fill="#1a5fb4" opacity="0.6"/>
+  <rect x="44" y="28" width="52" height="68" rx="6" fill="#f6f5f4"/>
+  <rect x="52" y="40" width="36" height="5" rx="2.5" fill="#9a9996"/>
+  <rect x="52" y="52" width="28" height="5" rx="2.5" fill="#c0bfbc"/>
+  <rect x="52" y="64" width="32" height="5" rx="2.5" fill="#c0bfbc"/>
+  <rect x="52" y="76" width="20" height="5" rx="2.5" fill="#c0bfbc"/>
+  <path d="M98 50 L112 64 L84 102 L72 106 L74 94 Z" fill="#241f31"/>
+  <path d="M74 94 L84 102 L72 106 Z" fill="#f6d32d"/>
+  <path d="M98 50 L112 64 L108 69 L94 55 Z" fill="#5e5c64"/>
+</svg>
