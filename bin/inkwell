@@ -1,0 +1,12 @@
+#!/usr/bin/env python3
+"""Run Inkwell from a source checkout or an installed copy."""
+
+import os
+import sys
+
+here = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, os.environ.get("INKWELL_LIBDIR", os.path.dirname(here)))
+
+from inkwell.main import main  # noqa: E402
+
+sys.exit(main())

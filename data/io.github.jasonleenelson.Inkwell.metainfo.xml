@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.jasonleenelson.Inkwell</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Inkwell</name>
+  <summary>Simple Markdown notes in folders</summary>
+  <description>
+    <p>
+      Inkwell is a small, fast notes app. Notes are plain Markdown files in a
+      folder you choose, and the sidebar shows your folders as an expandable tree.
+    </p>
+    <ul>
+      <li>Create, rename, move and delete notes and folders</li>
+      <li>Drag notes between folders</li>
+      <li>Saves automatically as you type</li>
+      <li>Markdown highlighting with buttons and shortcuts for common formatting</li>
+      <li>Find in note, light and dark styles, works in narrow windows</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">io.github.jasonleenelson.Inkwell.desktop</launchable>
+  <url type="homepage">https://github.com/jasonleenelson/Simple-Markdown-Notetaking-App</url>
+  <developer id="io.github.jasonleenelson">
+    <name>Jason</name>
+  </developer>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2026-10-20"/>
+  </releases>
+</component>
