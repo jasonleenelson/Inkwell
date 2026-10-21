@@ -8,10 +8,11 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("GtkSource", "5")
 
-from gi.repository import Adw, Gdk, Gio, Gtk, GtkSource  # noqa: E402
+from gi.repository import Adw, Gdk, Gio, GObject, Gtk, GtkSource  # noqa: E402
 
-from . import APP_ID, __version__  # noqa: E402
+from . import APP_ID, __version__, appearance  # noqa: E402
 from .config import Config  # noqa: E402
+from .preferences import PreferencesDialog  # noqa: E402
 from .window import InkwellWindow  # noqa: E402
 
 CSS = """
@@ -26,17 +27,27 @@ CSS = """
   min-height: 48px;
 }
 .note-body {
-  font-size: 1.05em;
   background: none;
   padding: 0 18px;
 }
 """
 
 
+# GTK's default text resolution, in 1/1024ths of a dot per inch.
+DEFAULT_DPI = 96 * 1024
+
+
 class InkwellApplication(Adw.Application):
+    zoom = GObject.Property(type=int, default=appearance.DEFAULT_ZOOM)
+    editor_font_size = GObject.Property(type=int, default=appearance.DEFAULT_FONT_SIZE)
+
     def __init__(self):
         super().__init__(application_id=APP_ID, flags=Gio.ApplicationFlags.DEFAULT_FLAGS)
         self.config = Config()
+        self.zoom = appearance.clamp_zoom(self.config.get("zoom", appearance.DEFAULT_ZOOM))
+        self.editor_font_size = appearance.clamp_font_size(
+            self.config.get("editor_font_size", appearance.DEFAULT_FONT_SIZE)
+        )
 
     def do_startup(self):
         Adw.Application.do_startup(self)
@@ -51,13 +62,41 @@ class InkwellApplication(Adw.Application):
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )
 
-        for name, handler in (("quit", self._on_quit), ("about", self._on_about)):
+        # Zoom works by scaling GTK's text resolution, which every font size
+        # in the app (the editor's included) is measured against.
+        self.font_provider = Gtk.CssProvider()
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(),
+            self.font_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1,
+        )
+        self.gtk_settings = Gtk.Settings.get_default()
+        self._system_dpi = self.gtk_settings.props.gtk_xft_dpi
+        if self._system_dpi <= 0:
+            self._system_dpi = DEFAULT_DPI
+        self._applied_dpi = None
+        self.gtk_settings.connect("notify::gtk-xft-dpi", self._on_system_dpi_changed)
+        self._apply_zoom()
+        self._apply_font_size()
+
+        for name, handler in (
+            ("quit", self._on_quit),
+            ("about", self._on_about),
+            ("preferences", self._on_preferences),
+            ("zoom-in", lambda *_: self.set_zoom(appearance.zoom_in(self.zoom))),
+            ("zoom-out", lambda *_: self.set_zoom(appearance.zoom_out(self.zoom))),
+            ("zoom-reset", lambda *_: self.set_zoom(appearance.DEFAULT_ZOOM)),
+        ):
             action = Gio.SimpleAction.new(name, None)
             action.connect("activate", handler)
             self.add_action(action)
 
         for action, keys in (
             ("app.quit", ["<Control>q"]),
+            ("app.preferences", ["<Control>comma"]),
+            ("app.zoom-in", ["<Control>plus", "<Control>equal", "<Control>KP_Add"]),
+            ("app.zoom-out", ["<Control>minus", "<Control>KP_Subtract"]),
+            ("app.zoom-reset", ["<Control>0", "<Control>KP_0"]),
             ("win.new-note('')", ["<Control>n"]),
             ("win.new-folder('')", ["<Control><Shift>n"]),
             ("win.save", ["<Control>s"]),
@@ -72,6 +111,46 @@ class InkwellApplication(Adw.Application):
     def do_activate(self):
         window = self.get_active_window() or InkwellWindow(self, self.config)
         window.present()
+
+    # Text size and zoom ---------------------------------------------------
+
+    def set_zoom(self, percent):
+        percent = appearance.clamp_zoom(percent)
+        if percent == self.zoom:
+            return
+        self.zoom = percent
+        self._apply_zoom()
+        self.config.set("zoom", percent)
+        self.config.save()
+
+    def set_editor_font_size(self, points):
+        points = appearance.clamp_font_size(points)
+        if points == self.editor_font_size:
+            return
+        self.editor_font_size = points
+        self._apply_font_size()
+        self.config.set("editor_font_size", points)
+        self.config.save()
+
+    def _apply_zoom(self):
+        self._applied_dpi = round(self._system_dpi * self.zoom / 100)
+        self.gtk_settings.props.gtk_xft_dpi = self._applied_dpi
+
+    def _apply_font_size(self):
+        self.font_provider.load_from_string(
+            f".note-body {{ font-size: {self.editor_font_size}pt; }}"
+        )
+
+    def _on_system_dpi_changed(self, settings, _pspec):
+        # The desktop's own text scaling changed: zoom relative to the new value.
+        dpi = settings.props.gtk_xft_dpi
+        if dpi == self._applied_dpi:
+            return
+        self._system_dpi = dpi if dpi > 0 else DEFAULT_DPI
+        self._apply_zoom()
+
+    def _on_preferences(self, *_args):
+        PreferencesDialog(self).present(self.get_active_window())
 
     def _on_quit(self, *_args):
         for window in self.get_windows():

@@ -12,6 +12,7 @@ A simple, native Markdown notes app for Linux. Think Obsidian with fewer moving 
 - Markdown highlighting, plus buttons and shortcuts for bold, italic, strikethrough, headings, lists, checklists, quotes, code and links
 - Lists continue when you press Enter
 - Find in note (Ctrl+F)
+- Preferences (Ctrl+,) for the editor text size and a zoom that scales all text in the app (Ctrl+Plus, Ctrl+Minus, Ctrl+0)
 - Follows the system light/dark style and adapts to narrow windows
 - Picks up changes made by other programs, so you can sync the folder with Git, Syncthing, Nextcloud and so on
 
@@ -60,6 +61,9 @@ Use `sudo make install PREFIX=/usr/local` for a system-wide install, and `make u
 | Ctrl+H | Cycle heading level |
 | Ctrl+K | Insert link |
 | Ctrl+Z / Ctrl+Shift+Z | Undo / redo |
+| Ctrl+Plus / Ctrl+Minus | Zoom in / out |
+| Ctrl+0 | Reset zoom |
+| Ctrl+, | Preferences (editor text size and zoom) |
 | Ctrl+Q | Quit |
 
 ## Development
