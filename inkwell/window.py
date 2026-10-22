@@ -78,6 +78,7 @@ class InkwellWindow(Adw.ApplicationWindow):
         section.append("Open Notes Folder in Files", "win.open-folder")
         menu.append_section(None, section)
         section = Gio.Menu()
+        section.append("Preferences", "app.preferences")
         section.append("Keyboard Shortcuts", "win.shortcuts")
         section.append("About Inkwell", "app.about")
         menu.append_section(None, section)
@@ -399,6 +400,9 @@ class InkwellWindow(Adw.ApplicationWindow):
             ("Ctrl+H", "Heading"),
             ("Ctrl+K", "Link"),
             ("Ctrl+Z / Ctrl+Shift+Z", "Undo / redo"),
+            ("Ctrl+Plus / Ctrl+Minus", "Zoom in / out"),
+            ("Ctrl+0", "Reset zoom"),
+            ("Ctrl+,", "Preferences"),
             ("Ctrl+Q", "Quit"),
         )
         group = Adw.PreferencesGroup()
