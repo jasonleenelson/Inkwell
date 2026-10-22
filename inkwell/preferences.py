@@ -31,6 +31,15 @@ class PreferencesDialog(Adw.PreferencesDialog):
         self.zoom_row.connect("notify::selected", self._on_zoom_changed)
         group.add(self.zoom_row)
 
+        self.sharp_row = Adw.SwitchRow(
+            title="Sharp Text",
+            subtitle="Line text up with screen pixels so letters are not blurred or cut "
+            "off at the top. Turn off to use your desktop's own font rendering.",
+            active=app.sharp_text,
+        )
+        self.sharp_row.connect("notify::active", self._on_sharp_changed)
+        group.add(self.sharp_row)
+
         reset = Gtk.Button(label="Reset", valign=Gtk.Align.CENTER)
         reset.add_css_class("flat")
         reset.connect("clicked", self._on_reset)
@@ -44,6 +53,7 @@ class PreferencesDialog(Adw.PreferencesDialog):
         self._handlers = [
             app.connect("notify::zoom", self._on_app_zoom),
             app.connect("notify::editor-font-size", self._on_app_font_size),
+            app.connect("notify::sharp-text", self._on_app_sharp_text),
         ]
         self.connect("closed", self._on_closed)
 
@@ -53,9 +63,13 @@ class PreferencesDialog(Adw.PreferencesDialog):
     def _on_zoom_changed(self, row, _pspec):
         self.app.set_zoom(appearance.ZOOM_LEVELS[row.get_selected()])
 
+    def _on_sharp_changed(self, row, _pspec):
+        self.app.set_sharp_text(row.get_active())
+
     def _on_reset(self, _button):
         self.app.set_editor_font_size(appearance.DEFAULT_FONT_SIZE)
         self.app.set_zoom(appearance.DEFAULT_ZOOM)
+        self.app.set_sharp_text(True)
 
     def _on_app_zoom(self, app, _pspec):
         index = appearance.ZOOM_LEVELS.index(app.zoom)
@@ -65,6 +79,10 @@ class PreferencesDialog(Adw.PreferencesDialog):
     def _on_app_font_size(self, app, _pspec):
         if self.font_size_row.get_value() != app.editor_font_size:
             self.font_size_row.set_value(app.editor_font_size)
+
+    def _on_app_sharp_text(self, app, _pspec):
+        if self.sharp_row.get_active() != app.sharp_text:
+            self.sharp_row.set_active(app.sharp_text)
 
     def _on_closed(self, _dialog):
         for handler in self._handlers:

@@ -36,10 +36,14 @@ CSS = """
 # GTK's default text resolution, in 1/1024ths of a dot per inch.
 DEFAULT_DPI = 96 * 1024
 
+# GTK 4.16 added automatic font rendering, which ignores metric hinting.
+HAS_FONT_RENDERING = hasattr(Gtk, "FontRendering")
+
 
 class InkwellApplication(Adw.Application):
     zoom = GObject.Property(type=int, default=appearance.DEFAULT_ZOOM)
     editor_font_size = GObject.Property(type=int, default=appearance.DEFAULT_FONT_SIZE)
+    sharp_text = GObject.Property(type=bool, default=True)
 
     def __init__(self):
         super().__init__(application_id=APP_ID, flags=Gio.ApplicationFlags.DEFAULT_FLAGS)
@@ -48,6 +52,7 @@ class InkwellApplication(Adw.Application):
         self.editor_font_size = appearance.clamp_font_size(
             self.config.get("editor_font_size", appearance.DEFAULT_FONT_SIZE)
         )
+        self.sharp_text = bool(self.config.get("sharp_text", True))
 
     def do_startup(self):
         Adw.Application.do_startup(self)
@@ -76,8 +81,13 @@ class InkwellApplication(Adw.Application):
             self._system_dpi = DEFAULT_DPI
         self._applied_dpi = None
         self.gtk_settings.connect("notify::gtk-xft-dpi", self._on_system_dpi_changed)
+        self._system_hint_metrics = self.gtk_settings.props.gtk_hint_font_metrics
+        self._system_rendering = (
+            self.gtk_settings.props.gtk_font_rendering if HAS_FONT_RENDERING else None
+        )
         self._apply_zoom()
         self._apply_font_size()
+        self._apply_sharp_text()
 
         for name, handler in (
             ("quit", self._on_quit),
@@ -131,6 +141,30 @@ class InkwellApplication(Adw.Application):
         self._apply_font_size()
         self.config.set("editor_font_size", points)
         self.config.save()
+
+    def set_sharp_text(self, sharp):
+        sharp = bool(sharp)
+        if sharp == self.sharp_text:
+            return
+        self.sharp_text = sharp
+        self._apply_sharp_text()
+        self.config.set("sharp_text", sharp)
+        self.config.save()
+
+    def _apply_sharp_text(self):
+        # Since GTK 4.16 text is laid out at fractional pixel positions, so on
+        # an ordinary (non-HiDPI) screen a line of text can start part way
+        # down a pixel and the tops of its letters come out faint, as if cut
+        # off. Hinting the font metrics snaps each line to whole pixels again;
+        # GTK only honours that in its "manual" font rendering mode.
+        if self.sharp_text:
+            if HAS_FONT_RENDERING:
+                self.gtk_settings.props.gtk_font_rendering = Gtk.FontRendering.MANUAL
+            self.gtk_settings.props.gtk_hint_font_metrics = True
+        else:
+            if HAS_FONT_RENDERING:
+                self.gtk_settings.props.gtk_font_rendering = self._system_rendering
+            self.gtk_settings.props.gtk_hint_font_metrics = self._system_hint_metrics
 
     def _apply_zoom(self):
         self._applied_dpi = round(self._system_dpi * self.zoom / 100)
