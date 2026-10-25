@@ -19,6 +19,8 @@ test:
 install:
 	install -d $(DESTDIR)$(LIBDIR)/inkwell $(DESTDIR)$(PREFIX)/bin
 	install -m 644 inkwell/*.py $(DESTDIR)$(LIBDIR)/inkwell/
+	install -d $(DESTDIR)$(LIBDIR)/inkwell/icons
+	install -m 644 inkwell/icons/*.svg $(DESTDIR)$(LIBDIR)/inkwell/icons/
 	printf '#!/bin/sh\nPYTHONPATH="%s$${PYTHONPATH:+:$$PYTHONPATH}" exec %s -m inkwell "$$@"\n' \
 		'$(LIBDIR)' '$(PYTHON)' > $(DESTDIR)$(PREFIX)/bin/inkwell
 	chmod 755 $(DESTDIR)$(PREFIX)/bin/inkwell
