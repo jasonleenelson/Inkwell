@@ -4,9 +4,10 @@ from pathlib import Path
 
 from gi.repository import Adw, Gio, GLib, Gtk
 
-from . import store
+from . import store, templates
 from .editor import NoteEditor
 from .sidebar import Sidebar
+from .template_dialog import TemplateDialog
 
 FORMAT_ACTIONS = {
     "bold": ("wrap_selection", "**"),
@@ -152,6 +153,7 @@ class InkwellWindow(Adw.ApplicationWindow):
             ("rename", self._on_rename),
             ("trash", self._on_trash),
             ("show-in-files", self._on_show_in_files),
+            ("edit-template", self._on_edit_template),
         ):
             action = Gio.SimpleAction.new(name, GLib.VariantType.new("s"))
             action.connect("activate", handler)
@@ -277,14 +279,23 @@ class InkwellWindow(Adw.ApplicationWindow):
 
     def _on_new_note(self, _action, param):
         try:
-            path = store.create_note(self._target_folder(param))
+            path, cursor = templates.create_note(self._target_folder(param))
         except (store.NoteError, OSError) as error:
             self.toast(f"Couldn't create a note: {error}")
             return
         self.sidebar.refresh()
         self.open_note(path)
         self.sidebar.select_file(Gio.File.new_for_path(str(path)))
-        self.editor.focus_title()
+        if cursor is None:
+            self.editor.focus_title()
+        else:
+            # The template already named it, so go straight to the text.
+            self.editor.focus_text(cursor)
+
+    def _on_edit_template(self, _action, param):
+        dialog = TemplateDialog(self._target_folder(param), self.notes_dir)
+        dialog.connect("error", lambda _d, message: self.toast(message))
+        dialog.present(self)
 
     def _on_new_folder(self, _action, param):
         parent = self._target_folder(param)
