@@ -182,7 +182,10 @@ class NoteEditor(Gtk.Box):
         self.title_entry.grab_focus()
         self.title_entry.select_region(0, -1)
 
-    def focus_text(self):
+    def focus_text(self, offset=None):
+        """Focus the text, optionally putting the cursor ``offset`` characters in."""
+        if offset is not None:
+            self.buffer.place_cursor(self.buffer.get_iter_at_offset(offset))
         self.view.grab_focus()
 
     # Formatting ----------------------------------------------------------

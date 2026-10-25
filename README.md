@@ -11,12 +11,30 @@ A simple, native Markdown notes app for Linux. Think Obsidian with fewer moving 
 - Saves automatically as you type, and writes files atomically so a crash can't leave half a note
 - Markdown highlighting, plus buttons and shortcuts for bold, italic, strikethrough, headings, lists, checklists, quotes, code and links
 - Lists continue when you press Enter
+- Note templates per folder: right-click a folder and pick **Note Template…** to give its new notes a starting text and a title such as today's date (see below)
 - Find in note (Ctrl+F)
 - Preferences (Ctrl+,) for the editor text size and a zoom that scales all text in the app (Ctrl+Plus, Ctrl+Minus, Ctrl+0), plus a "Sharp Text" switch that keeps letters crisp on ordinary screens
 - Follows the system light/dark style and adapts to narrow windows
 - Picks up changes made by other programs, so you can sync the folder with Git, Syncthing, Nextcloud and so on
 
 Your notes live in `~/Documents/Notes` by default. Change it from the menu with **Change Notes Folder…**. Deleting sends things to the Trash, not into the void.
+
+## Note templates
+
+Right-click a folder and choose **Note Template…** (right-click empty space in the sidebar for the top-level folder). Set a title pattern and the text new notes should start with. For a stargazing log you might use:
+
+- Title: `{{date}}`
+- Text:
+
+  ```
+  Weather: {{cursor}}
+  Temperature:
+  Main Focus:
+  ```
+
+Every new note in that folder is then named after the date (`2026-10-25`, then `2026-10-25 2` for a second one that day) and starts with that text, with the cursor after "Weather:". The placeholders are `{{date}}`, `{{time}}`, `{{date:%A %d %B}}` (any `strftime` format), `{{title}}`, `{{folder}}` and `{{cursor}}`. A template only applies to its own folder, not to folders inside it.
+
+The template is a hidden `.template.md` file in the folder, so it syncs along with your notes and you can edit it in any text editor.
 
 ## Running it
 
@@ -71,13 +89,14 @@ To update later, run `./update.sh` from the checkout. It pulls the latest `main`
 ## Development
 
 ```sh
-make test        # unit tests for the file handling
+make test        # unit tests for the file handling and templates
 ```
 
 The code is small and split by job:
 
 - `inkwell/store.py` creates, renames, moves, reads and writes notes. It has no GTK code, so it is easy to test.
 - `inkwell/sidebar.py` is the folder tree. Each folder watches the disk and updates itself.
+- `inkwell/templates.py` reads folder templates and fills in their placeholders. No GTK here either.
 - `inkwell/editor.py` is the title field, the text view, formatting commands and autosave.
 - `inkwell/window.py` puts them together and holds the menus and dialogs.
 

@@ -251,6 +251,8 @@ class Sidebar(Gtk.Box):
         create = Gio.Menu()
         create.append_item(_item("New Note", "win.new-note", uri))
         create.append_item(_item("New Folder", "win.new-folder", uri))
+        if entry.folder:
+            create.append_item(_item("Note Template…", "win.edit-template", uri))
         menu.append_section(None, create)
         edit = Gio.Menu()
         edit.append_item(_item("Rename…", "win.rename", uri))
@@ -266,6 +268,7 @@ class Sidebar(Gtk.Box):
         menu = Gio.Menu()
         menu.append_item(_item("New Note", "win.new-note", uri))
         menu.append_item(_item("New Folder", "win.new-folder", uri))
+        menu.append_item(_item("Note Template…", "win.edit-template", uri))
         self._popup(menu, gesture.get_widget(), x, y)
 
     def _popup(self, menu, widget, x, y):
