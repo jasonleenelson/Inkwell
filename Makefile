@@ -5,6 +5,8 @@ PREFIX ?= $(HOME)/.local
 APP_ID = io.github.jasonleenelson.Inkwell
 LIBDIR = $(PREFIX)/share/inkwell
 PYTHON ?= python3
+# The commit being installed, so Check for Updates knows what is new.
+COMMIT ?= $(shell git rev-parse HEAD 2>/dev/null)
 
 .PHONY: run test install uninstall
 
@@ -29,6 +31,8 @@ install:
 	install -Dm 644 data/icons/hicolor/scalable/apps/$(APP_ID).svg \
 		$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/$(APP_ID).svg
 	@if [ -z "$(DESTDIR)" ]; then \
+		printf 'source=%s\ncommit=%s\nprefix=%s\n' '$(CURDIR)' '$(COMMIT)' '$(PREFIX)' \
+			> $(LIBDIR)/install-info; \
 		command -v gtk4-update-icon-cache >/dev/null && \
 			gtk4-update-icon-cache -qtf $(PREFIX)/share/icons/hicolor || true; \
 		command -v update-desktop-database >/dev/null && \
