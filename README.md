@@ -67,7 +67,7 @@ make install
 
 Use `sudo make install PREFIX=/usr/local` for a system-wide install, and `make uninstall` (with the same `PREFIX`) to remove it.
 
-To update later, run `./update.sh` from the checkout. It pulls the latest `main` and runs `make install` again. Your notes are not touched.
+To update later, open **Preferences** (Ctrl+,) and press **Check** under **Updates**. If there's a newer version it offers **Update**, then **Restart**. That runs `./update.sh` from the checkout you installed from, which you can also run yourself: it pulls the latest `main` and runs `make install` again (asking for your password only if Inkwell was installed system-wide). Your notes are not touched.
 
 ## Keyboard shortcuts
 

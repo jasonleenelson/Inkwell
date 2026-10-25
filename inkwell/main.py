@@ -202,6 +202,10 @@ class InkwellApplication(Adw.Application):
 
     def _on_quit(self, *_args):
         for window in self.get_windows():
+            # A window won't close while it shows a dialog such as Preferences.
+            dialog = window.get_visible_dialog() if hasattr(window, "get_visible_dialog") else None
+            if dialog:
+                dialog.force_close()
             window.close()
 
     def _on_about(self, *_args):
