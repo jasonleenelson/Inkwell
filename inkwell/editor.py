@@ -3,9 +3,10 @@
 import re
 from pathlib import Path
 
-from gi.repository import Adw, Gdk, GLib, GObject, Gtk, GtkSource
+from gi.repository import Adw, Gdk, Gio, GLib, GObject, Gtk, GtkSource
 
 from . import store
+from .attachments import AttachmentStrip
 
 AUTOSAVE_DELAY_MS = 800
 
@@ -54,6 +55,7 @@ class NoteEditor(Gtk.Box):
         keys = Gtk.EventControllerKey()
         keys.connect("key-pressed", self._on_key_pressed)
         self.view.add_controller(keys)
+        self.view.connect("paste-clipboard", self._on_paste)
 
         self.search_settings = GtkSource.SearchSettings(wrap_around=True)
         self.search_context = GtkSource.SearchContext.new(self.buffer, self.search_settings)
@@ -75,6 +77,19 @@ class NoteEditor(Gtk.Box):
         scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.append(scroller)
 
+        self.attachments = AttachmentStrip()
+        self.attachments.connect("error", lambda _s, message: self.emit("error", message))
+        self.append(self.attachments)
+
+        # Files or pictures dropped anywhere on the note are attached. This
+        # runs in the capture phase so it wins over the text view, which
+        # would otherwise insert the file's address as text.
+        drop = Gtk.DropTarget(actions=Gdk.DragAction.COPY)
+        drop.set_gtypes([Gdk.FileList, Gdk.Texture])
+        drop.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        drop.connect("drop", self._on_drop)
+        self.add_controller(drop)
+
         style = Adw.StyleManager.get_default()
         style.connect("notify::dark", lambda *_: self._update_scheme())
         self._update_scheme()
@@ -95,6 +110,7 @@ class NoteEditor(Gtk.Box):
         self._dirty = False
         self.buffer.place_cursor(self.buffer.get_start_iter())
         self.title_entry.set_text(store.note_title(path))
+        self.attachments.set_note(path)
 
     def close(self, save=True):
         if save:
@@ -107,6 +123,7 @@ class NoteEditor(Gtk.Box):
         self.buffer.set_text("")
         self._loading = False
         self.title_entry.set_text("")
+        self.attachments.set_note(None)
 
     def text(self):
         return self.buffer.get_text(self.buffer.get_start_iter(), self.buffer.get_end_iter(), True)
@@ -135,6 +152,7 @@ class NoteEditor(Gtk.Box):
         else:
             return
         self.title_entry.set_text(store.note_title(self.path))
+        self.attachments.set_note(self.path)
 
     def _on_changed(self, _buffer):
         if self._loading or self.path is None:
@@ -176,6 +194,7 @@ class NoteEditor(Gtk.Box):
             return
         self.path = new
         self.title_entry.set_text(store.note_title(new))
+        self.attachments.set_note(new)
         self.emit("renamed", old, new)
 
     def focus_title(self):
@@ -333,6 +352,81 @@ class NoteEditor(Gtk.Box):
         self.view.scroll_mark_onscreen(buf.get_insert())
         return True
 
+    # Attachments ---------------------------------------------------------
+
+    def choose_attachments(self):
+        """Ask for pictures (or any files) to attach to the open note."""
+        if self.path is None:
+            return
+        pictures = Gtk.FileFilter(name="Pictures")
+        pictures.add_mime_type("image/*")
+        everything = Gtk.FileFilter(name="All Files")
+        everything.add_pattern("*")
+        filters = Gio.ListStore(item_type=Gtk.FileFilter)
+        filters.append(pictures)
+        filters.append(everything)
+        dialog = Gtk.FileDialog(title="Attach Pictures", modal=True, filters=filters)
+        dialog.set_default_filter(pictures)
+        pictures_dir = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_PICTURES)
+        if pictures_dir:
+            dialog.set_initial_folder(Gio.File.new_for_path(pictures_dir))
+        dialog.open_multiple(self.get_root(), None, self._on_attachments_chosen)
+
+    def _on_attachments_chosen(self, dialog, result):
+        try:
+            files = dialog.open_multiple_finish(result)
+        except GLib.Error:
+            return  # Cancelled.
+        self.attachments.add_files([files.get_item(i) for i in range(files.get_n_items())])
+
+    def _on_drop(self, _target, value, _x, _y):
+        if self.path is None:
+            return False
+        if isinstance(value, Gdk.Texture):
+            self.attachments.add_texture(value)
+            return True
+        return self.attachments.add_files(value.get_files()) > 0
+
+    def _on_paste(self, view):
+        """Ctrl+V attaches copied files and pictures; text pastes as usual."""
+        if self.path is None:
+            return
+        clipboard = view.get_clipboard()
+        formats = clipboard.get_formats().union_deserialize_gtypes()
+        if formats.contain_gtype(Gdk.FileList):
+            view.stop_emission_by_name("paste-clipboard")
+            clipboard.read_value_async(
+                Gdk.FileList, GLib.PRIORITY_DEFAULT, None, self._on_paste_files
+            )
+        elif _has_texture(formats) and not formats.contain_mime_type("text/plain"):
+            view.stop_emission_by_name("paste-clipboard")
+            clipboard.read_texture_async(None, self._on_paste_texture)
+
+    def _on_paste_files(self, clipboard, result):
+        try:
+            files = clipboard.read_value_finish(result).get_files()
+        except GLib.Error:
+            files = []
+        # A copied web link can arrive as a file list too; only real local
+        # files are attached, anything else is pasted as text.
+        if not any(f.get_path() and not Path(f.get_path()).is_dir() for f in files):
+            self._paste_text(clipboard)
+            return
+        self.attachments.add_files(files)
+
+    def _on_paste_texture(self, clipboard, result):
+        try:
+            texture = clipboard.read_texture_finish(result)
+        except GLib.Error:
+            texture = None
+        if texture is None:
+            self._paste_text(clipboard)
+            return
+        self.attachments.add_texture(texture)
+
+    def _paste_text(self, clipboard):
+        self.buffer.paste_clipboard(clipboard, None, self.view.get_editable())
+
     # Find ----------------------------------------------------------------
 
     def show_find(self):
@@ -374,3 +468,8 @@ class NoteEditor(Gtk.Box):
         scheme = manager.get_scheme("Adwaita-dark" if dark else "Adwaita")
         if scheme:
             self.buffer.set_style_scheme(scheme)
+
+
+def _has_texture(formats):
+    # Copies inside this app offer a subclass such as GdkMemoryTexture.
+    return any(GObject.type_is_a(gtype, Gdk.Texture) for gtype in formats.get_gtypes() or [])

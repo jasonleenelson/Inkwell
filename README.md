@@ -12,6 +12,7 @@ A simple, native Markdown notes app for Linux. Think Obsidian with fewer moving 
 - Markdown highlighting, plus buttons and shortcuts for bold, italic, strikethrough, headings, lists, checklists, quotes, code and links
 - Lists continue when you press Enter
 - Note templates per folder: right-click a folder and pick **Note Template…** to give its new notes a starting text and a title such as today's date (see below)
+- Picture attachments: attach pictures (or any file) to a note and they show as thumbnails along the bottom, like attachments on an email (see below)
 - Find in note (Ctrl+F)
 - Preferences (Ctrl+,) for the editor text size and a zoom that scales all text in the app (Ctrl+Plus, Ctrl+Minus, Ctrl+0), plus a "Sharp Text" switch that keeps letters crisp on ordinary screens
 - Follows the system light/dark style and adapts to narrow windows
@@ -35,6 +36,12 @@ Right-click a folder and choose **Note Template…** (right-click empty space in
 Every new note in that folder is then named after the date (`2026-10-25`, then `2026-10-25 2` for a second one that day) and starts with that text, with the cursor after "Weather:". The placeholders are `{{date}}`, `{{time}}`, `{{date:%A %d %B}}` (any `strftime` format), `{{title}}`, `{{folder}}` and `{{cursor}}`. A template only applies to its own folder, not to folders inside it.
 
 The template is a hidden `.template.md` file in the folder, so it syncs along with your notes and you can edit it in any text editor.
+
+## Attachments
+
+Press the picture button in the note's toolbar (Ctrl+Shift+A), drop files onto the note, or paste a copied picture or file with Ctrl+V. Attachments show as thumbnails along the bottom of the note: click one to open it, or right-click it to show it in your file manager or move it to the Trash.
+
+They are stored as ordinary files in a folder beside the note, named after it, so `Trip.md` keeps its pictures in `Trip.assets/` (the same convention Typora uses). The Markdown file itself isn't changed, and the sidebar hides the `.assets` folder. Renaming, moving or deleting a note takes its pictures along.
 
 ## Running it
 
