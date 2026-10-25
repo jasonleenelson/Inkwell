@@ -1,5 +1,6 @@
 """Application entry point."""
 
+import os
 import sys
 
 import gi
@@ -10,7 +11,7 @@ gi.require_version("GtkSource", "5")
 
 from gi.repository import Adw, Gdk, Gio, GObject, Gtk, GtkSource  # noqa: E402
 
-from . import APP_ID, __version__, appearance  # noqa: E402
+from . import APP_ID, __version__, appearance, updater  # noqa: E402
 from .config import Config  # noqa: E402
 from .preferences import PreferencesDialog  # noqa: E402
 from .window import InkwellWindow  # noqa: E402
@@ -58,6 +59,8 @@ class InkwellApplication(Adw.Application):
             self.config.get("editor_font_size", appearance.DEFAULT_FONT_SIZE)
         )
         self.sharp_text = bool(self.config.get("sharp_text", True))
+        self.updater = updater.Updater(updater.find_install())
+        self.restart_requested = False
 
     def do_startup(self):
         Adw.Application.do_startup(self)
@@ -192,8 +195,17 @@ class InkwellApplication(Adw.Application):
     def _on_preferences(self, *_args):
         PreferencesDialog(self).present(self.get_active_window())
 
+    def restart(self):
+        """Close every window (which saves the open note) and start again."""
+        self.restart_requested = True
+        self._on_quit()
+
     def _on_quit(self, *_args):
         for window in self.get_windows():
+            # A window won't close while it shows a dialog such as Preferences.
+            dialog = window.get_visible_dialog() if hasattr(window, "get_visible_dialog") else None
+            if dialog:
+                dialog.force_close()
             window.close()
 
     def _on_about(self, *_args):
@@ -210,4 +222,9 @@ class InkwellApplication(Adw.Application):
 
 
 def main():
-    return InkwellApplication().run(sys.argv)
+    app = InkwellApplication()
+    status = app.run(sys.argv)
+    if app.restart_requested:
+        command = updater.restart_command(sys.argv)
+        os.execv(command[0], command)
+    return status
