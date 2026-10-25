@@ -20,6 +20,7 @@ FORMAT_ACTIONS = {
     "task-list": ("toggle_line_prefix", "- [ ] "),
     "quote": ("toggle_line_prefix", "> "),
     "link": ("insert_link",),
+    "attach": ("choose_attachments",),
 }
 
 
@@ -125,6 +126,12 @@ class InkwellWindow(Adw.ApplicationWindow):
             icon_name="edit-find-symbolic", action_name="win.find", tooltip_text="Find (Ctrl+F)"
         )
         header.pack_end(find)
+        attach = Gtk.Button(
+            icon_name="inkwell-attach-picture-symbolic",
+            action_name="win.attach",
+            tooltip_text="Attach Pictures (Ctrl+Shift+A)",
+        )
+        header.pack_end(attach)
 
         empty = Adw.StatusPage(
             icon_name="accessories-text-editor-symbolic",
@@ -346,7 +353,12 @@ class InkwellWindow(Adw.ApplicationWindow):
         dialog = Adw.AlertDialog(
             heading=f"Move “{store.note_title(path)}” to the Trash?",
             body="You can restore it from the Trash in your file manager."
-            + (" Everything inside the folder goes with it." if kind == "folder" else ""),
+            + (" Everything inside the folder goes with it." if kind == "folder" else "")
+            + (
+                " Its attachments go with it."
+                if kind == "note" and store.list_attachments(path)
+                else ""
+            ),
         )
         dialog.add_response("cancel", "Cancel")
         dialog.add_response("trash", "Move to Trash")
@@ -364,6 +376,14 @@ class InkwellWindow(Adw.ApplicationWindow):
                 gfile.trash(None)
             except GLib.Error as error:
                 self.toast(f"Couldn't move it to the Trash: {error.message}")
+                return
+            # A note's pictures go to the Trash with it.
+            pictures = store.attachments_dir(path)
+            if kind == "note" and pictures.is_dir():
+                try:
+                    Gio.File.new_for_path(str(pictures)).trash(None)
+                except GLib.Error as error:
+                    self.toast(f"Couldn't move the note's pictures to the Trash: {error.message}")
             self.sidebar.refresh()
 
         dialog.connect("response", on_response)
@@ -410,6 +430,7 @@ class InkwellWindow(Adw.ApplicationWindow):
             ("Ctrl+I", "Italic"),
             ("Ctrl+H", "Heading"),
             ("Ctrl+K", "Link"),
+            ("Ctrl+Shift+A", "Attach pictures (or paste or drop them on the note)"),
             ("Ctrl+Z / Ctrl+Shift+Z", "Undo / redo"),
             ("Ctrl+Plus / Ctrl+Minus", "Zoom in / out"),
             ("Ctrl+0", "Reset zoom"),

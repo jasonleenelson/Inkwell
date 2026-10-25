@@ -12,6 +12,10 @@ from pathlib import Path
 
 NOTE_SUFFIX = ".md"
 
+# A note's attachments live in a folder beside it named after the note, so
+# "Trip.md" keeps its pictures in "Trip.assets/" (the convention Typora uses).
+ATTACHMENTS_SUFFIX = ".assets"
+
 
 class NoteError(Exception):
     """A user-facing problem with a note or folder operation."""
@@ -81,7 +85,9 @@ def rename(path, new_name):
         return path
     if target.exists():
         raise NoteError(f"“{note_title(target)}” already exists here.")
+    _check_attachments_free(path, target)
     path.rename(target)
+    _carry_attachments(path, target, os.rename)
     return target
 
 
@@ -105,8 +111,102 @@ def move(path, destination):
     target = destination / path.name
     if target.exists():
         raise NoteError(f"“{note_title(target)}” already exists in that folder.")
+    _check_attachments_free(path, target)
     shutil.move(str(path), str(target))
+    _carry_attachments(path, target, lambda old, new: shutil.move(str(old), str(new)))
     return target
+
+
+# Attachments -----------------------------------------------------------------
+
+
+def attachments_dir(note):
+    """The folder holding ``note``'s attachments (it may not exist yet)."""
+    note = Path(note)
+    return note.with_name(note_title(note) + ATTACHMENTS_SUFFIX)
+
+
+def is_attachments_dir(path):
+    """True if ``path`` is the attachments folder of a note beside it."""
+    path = Path(path)
+    if not path.name.endswith(ATTACHMENTS_SUFFIX):
+        return False
+    stem = path.name[: -len(ATTACHMENTS_SUFFIX)]
+    if not stem:
+        return False
+    for suffix in (NOTE_SUFFIX, NOTE_SUFFIX.upper()):
+        if path.with_name(stem + suffix).is_file():
+            return True
+    return False
+
+
+def list_attachments(note):
+    """The files attached to ``note``, sorted by name."""
+    folder = attachments_dir(note)
+    try:
+        items = [item for item in folder.iterdir() if not item.name.startswith(".")]
+    except OSError:
+        return []
+    files = [item for item in items if item.is_file()]
+    return sorted(files, key=lambda item: (item.name.casefold(), item.name))
+
+
+def add_attachment(note, source):
+    """Copy the file at ``source`` into ``note``'s attachments folder."""
+    source = Path(source)
+    if not source.is_file():
+        raise NoteError(f"“{source.name}” isn't a file, so it wasn't attached.")
+    target = _attachment_target(note, source.name)
+    shutil.copyfile(source, target)
+    return target
+
+
+def add_attachment_data(note, name, data):
+    """Save ``data`` (bytes) as a new attachment called ``name``."""
+    target = _attachment_target(note, name)
+    with open(target, "xb") as handle:
+        handle.write(data)
+    return target
+
+
+def remove_empty_attachments_dir(note):
+    """Remove ``note``'s attachments folder once nothing is left in it."""
+    try:
+        attachments_dir(note).rmdir()
+    except OSError:
+        pass  # Missing or not empty, both fine.
+
+
+def _attachment_target(note, name):
+    folder = attachments_dir(note)
+    folder.mkdir(exist_ok=True)
+    name = Path(name).name.lstrip(".") or "attachment"
+    stem, suffix = os.path.splitext(name)
+    return unique_path(folder, stem or "attachment", suffix)
+
+
+def _check_attachments_free(path, target):
+    if not is_note(path):
+        return
+    if attachments_dir(path).is_dir() and attachments_dir(target).exists():
+        raise NoteError(
+            f"“{attachments_dir(target).name}” already exists there, so the pictures can't follow."
+        )
+
+
+def _carry_attachments(old_note, new_note, move_folder):
+    """After a note moved or was renamed, bring its attachments along."""
+    if not is_note(new_note):
+        return
+    old, new = attachments_dir(old_note), attachments_dir(new_note)
+    if not old.is_dir():
+        return
+    try:
+        move_folder(old, new)
+    except OSError:
+        # Put the note back beside its pictures rather than split them up.
+        move_folder(new_note, old_note)
+        raise
 
 
 def read_note(path):

@@ -8,6 +8,7 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 gi.require_version("GtkSource", "5")
+gi.require_version("GdkPixbuf", "2.0")
 
 from gi.repository import Adw, Gdk, Gio, GObject, Gtk, GtkSource  # noqa: E402
 
@@ -30,6 +31,15 @@ CSS = """
 .note-body {
   background: none;
   padding: 0 18px;
+}
+.attachments scrolledwindow > viewport > box {
+  padding: 8px 18px 10px 18px;
+}
+.attachment {
+  padding: 4px;
+}
+.attachment-preview {
+  border-radius: 8px;
 }
 """
 
@@ -125,6 +135,7 @@ class InkwellApplication(Adw.Application):
             ("win.italic", ["<Control>i"]),
             ("win.heading", ["<Control>h"]),
             ("win.link", ["<Control>k"]),
+            ("win.attach", ["<Control><Shift>a"]),
         ):
             self.set_accels_for_action(action, keys)
 

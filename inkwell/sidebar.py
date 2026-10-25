@@ -45,6 +45,8 @@ def list_folder(directory):
                     folder = item.is_dir()
                 except OSError:
                     continue
+                if folder and store.is_attachments_dir(item.path):
+                    continue  # Shown under its note, not as a folder.
                 if folder or item.name.lower().endswith(store.NOTE_SUFFIX):
                     entries.append(Entry(item.path, folder))
     except OSError:
