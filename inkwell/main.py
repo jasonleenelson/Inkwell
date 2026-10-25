@@ -67,6 +67,12 @@ class InkwellApplication(Adw.Application):
         Gtk.Window.set_default_icon_name(APP_ID)
         GtkSource.init()
 
+        # The list icons are bundled because icon themes name them
+        # inconsistently (Breeze has no view-list-ordered-symbolic, for one).
+        Gtk.IconTheme.get_for_display(Gdk.Display.get_default()).add_search_path(
+            os.path.join(os.path.dirname(__file__), "icons")
+        )
+
         provider = Gtk.CssProvider()
         provider.load_from_string(CSS)
         Gtk.StyleContext.add_provider_for_display(
