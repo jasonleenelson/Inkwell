@@ -49,6 +49,8 @@ make install
 
 Use `sudo make install PREFIX=/usr/local` for a system-wide install, and `make uninstall` (with the same `PREFIX`) to remove it.
 
+To update later, run `./update.sh` from the checkout. It pulls the latest `main` and runs `make install` again. Your notes are not touched.
+
 ## Keyboard shortcuts
 
 | Keys | Action |
