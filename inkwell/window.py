@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from gi.repository import Adw, Gio, GLib, Gtk
+from gi.repository import Adw, Gio, GLib, GObject, Gtk
 
 from . import store, templates
 from .editor import NoteEditor
@@ -122,9 +122,16 @@ class InkwellWindow(Adw.ApplicationWindow):
         self.formatting = formatting
         header.pack_start(formatting)
 
-        find = Gtk.Button(
-            icon_name="edit-find-symbolic", action_name="win.find", tooltip_text="Find (Ctrl+F)"
+        # A toggle tied to the search bar, so pressing it again closes the bar.
+        find = Gtk.ToggleButton(icon_name="edit-find-symbolic", tooltip_text="Find (Ctrl+F)")
+        self.editor.search_bar.bind_property(
+            "search-mode-enabled",
+            find,
+            "active",
+            GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE,
         )
+        find.connect("toggled", lambda b: b.get_active() and self.editor.show_find())
+        self.find_button = find
         header.pack_end(find)
         attach = Gtk.Button(
             icon_name="inkwell-attach-picture-symbolic",
@@ -248,6 +255,9 @@ class InkwellWindow(Adw.ApplicationWindow):
         for action in self.format_actions:
             action.set_enabled(editing)
         self.lookup_action("find").set_enabled(editing)
+        self.find_button.set_sensitive(editing)
+        if not editing:
+            self.editor.search_bar.set_search_mode(False)
         self.formatting.set_sensitive(editing)
 
     def _update_title(self):
