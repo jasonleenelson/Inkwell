@@ -1,8 +1,17 @@
 # Inkwell
 
+[![CI](https://github.com/jasonleenelson/Inkwell/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonleenelson/Inkwell/actions/workflows/ci.yml)
+
 A simple, native Markdown notes app for Linux. Think Obsidian with fewer moving parts: a sidebar of folders on the left, your note on the right, and everything saved as plain `.md` files in a folder you choose.
 
 ![Inkwell with a note open](docs/screenshot.png)
+
+<details>
+<summary>Dark style</summary>
+
+![Inkwell in the dark style](docs/screenshot-dark.png)
+
+</details>
 
 ## Features
 
@@ -60,6 +69,13 @@ sudo dnf install python3-gobject gtk4 libadwaita gtksourceview5
 sudo pacman -S python-gobject gtk4 libadwaita gtksourceview5
 ```
 
+Get the code:
+
+```sh
+git clone https://github.com/jasonleenelson/Inkwell.git
+cd Inkwell
+```
+
 Then run it straight from the checkout:
 
 ```sh
@@ -92,6 +108,10 @@ To update later, open **Preferences** (Ctrl+,) and press **Check** under **Updat
 | Ctrl+0 | Reset zoom |
 | Ctrl+, | Preferences (editor text size and zoom) |
 | Ctrl+Q | Quit |
+
+## Contributing
+
+Bug reports and ideas are welcome in [Issues](https://github.com/jasonleenelson/Inkwell/issues). Inkwell is meant to stay small, so a feature request has a better chance if it fits that.
 
 ## Development
 

@@ -15,11 +15,19 @@
       <li>Drag notes between folders</li>
       <li>Saves automatically as you type</li>
       <li>Markdown highlighting with buttons and shortcuts for common formatting</li>
+      <li>Note templates per folder, with the date, time and other placeholders</li>
+      <li>Picture and file attachments shown as thumbnails under the note</li>
       <li>Find in note, light and dark styles, works in narrow windows</li>
     </ul>
   </description>
   <launchable type="desktop-id">io.github.jasonleenelson.Inkwell.desktop</launchable>
-  <url type="homepage">https://github.com/jasonleenelson/Simple-Markdown-Notetaking-App</url>
+  <url type="homepage">https://github.com/jasonleenelson/Inkwell</url>
+  <url type="bugtracker">https://github.com/jasonleenelson/Inkwell/issues</url>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/jasonleenelson/Inkwell/main/docs/screenshot.png</image>
+    </screenshot>
+  </screenshots>
   <developer id="io.github.jasonleenelson">
     <name>Jason</name>
   </developer>

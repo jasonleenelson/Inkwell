@@ -231,7 +231,7 @@ class InkwellApplication(Adw.Application):
             application_icon=APP_ID,
             version=__version__,
             comments="Simple Markdown notes, kept as plain files in folders.",
-            website="https://github.com/jasonleenelson/Simple-Markdown-Notetaking-App",
+            website="https://github.com/jasonleenelson/Inkwell",
             license_type=Gtk.License.MIT_X11,
             developers=["Jason"],
         )
